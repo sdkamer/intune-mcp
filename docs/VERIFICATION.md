@@ -65,13 +65,18 @@ visible objects (this user can see none).
 
 ## Not yet verified live
 
-- **The rest of the local sign-in path**: the browser (loopback) login, `logout` and account switching,
-  recovery from a corrupt cache, refresh after the access token has expired for hours, other harnesses (Claude Code, Codex CLI), Windows and Linux
-  keychains, and restricted (scope-tag) users running it themselves.
+- **Browser (loopback) login:** the restricted user's installation reportedly signed in with the browser
+  flow (the owner believes so; the exact flow was not confirmed), so it is probably exercised on macOS,
+  but treat it as unconfirmed until someone states the flow they used.
+- **The rest of the local sign-in path**: `logout` and account switching,
+  recovery from a corrupt cache, refresh after the access token has expired for hours, Codex CLI, and
+  Windows and Linux keychains. (A restricted user running it through Claude, and Pi on one machine, are
+  covered by the checks above; which Claude product the restricted user used was not recorded.)
 - **Objects that did not exist in the test tenant**: app protection policies, app configuration policies
   and terms and conditions (list calls returned empty), the opt-in detected-apps tools, and policy
   settings for types other than macOS compliance and Windows Update for Business.
-- Restricted-user behaviour for the newer tools, and visible-object aggregate scope.
+- Restricted-user output for groups where that user can see objects (the test user sees none), and
+  visible-object aggregate scope.
 - Behaviour with other tenants, sovereign clouds (public cloud only) and large tenants.
 
 If you verify any of this in your own tenant, please say what you saw (never include tenant data).
