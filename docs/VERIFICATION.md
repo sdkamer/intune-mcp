@@ -51,6 +51,18 @@ scope tags carry through to the local server for device listing; `count_devices`
 default `devices` group enabled, so not yet checked for that user: out-of-scope device and hidden policy
 lookups returning `not_found`, the per-device state tools, and the other groups.
 
+### Second run, all five groups enabled (user-reported, 2026-10-29)
+
+The same scope-tag-restricted user re-ran the checks with every group enabled (the opt-in tenant-wide
+tools were also switched on, so 44 tools were visible; those three were not called). Results:
+`count_devices` returned 1 (complete); `list_compliance_policies` and `list_apps` returned 0 rows with no
+error; **both per-device state tools returned `not_found` for a known out-of-scope device**, the same
+isolation result the earlier hosted deployment gave; `list_role_definitions` returned 10 built-in roles
+(a technician sees 11, the custom role is hidden from this user) and `get_role_definition` worked, which is
+expected because this user's own Intune role includes Roles: Read. No authorization errors for the newly
+enabled groups. Still not exercised for a restricted user: the tenant-wide opt-in tools, and groups with
+visible objects (this user can see none).
+
 ## Not yet verified live
 
 - **The rest of the local sign-in path**: the browser (loopback) login, `logout` and account switching,
