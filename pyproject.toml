@@ -1,0 +1,46 @@
+[project]
+name = "intune-mcp"
+version = "0.1.0"
+description = "Read-only Microsoft Intune MCP server that runs on your own machine, with delegated per-user access"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastmcp==4.1.3",
+  "httpx2==2.16.0",
+  "pydantic-settings==2.16.1",
+  "msal==1.39.0",
+  "msal-extensions==1.3.1",
+  "cryptography==50.0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/sdkamer/intune-mcp"
+Issues = "https://github.com/sdkamer/intune-mcp/issues"
+
+[project.scripts]
+intune-mcp = "intune_mcp.local:main"
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.14.14",
+    "pyjwt[crypto]",
+]
+
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
