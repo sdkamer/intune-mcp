@@ -4,12 +4,14 @@ import argparse
 import asyncio
 import logging
 import math
+import os
 import re
 import sys
 import threading
 import time
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from fastmcp.exceptions import ToolError
@@ -29,6 +31,14 @@ SILENT_TIMEOUT = 60  # seconds, whole silent acquisition incl. a possible discov
 CACHE_ERROR = (
     "Encrypted token cache unavailable. Unlock/configure macOS Keychain, Windows DPAPI, or "
     "Linux libsecret and its desktop secret service. Plaintext fallback is forbidden"
+)
+
+
+LOCK_ERROR = (
+    "The token cache is locked by another run, or a previous run was killed while holding the "
+    "lock. "
+    "Stop every intune-mcp process (including harness servers); if it persists, delete the "
+    "'.lockfile' next to the cache in the intune-mcp data directory, then try again"
 )
 
 
@@ -78,6 +88,36 @@ class CheckedPersistence:
         return self.backend.get_location()
 
 
+def _clear_stale_lock(lock_path: str) -> None:
+    """Remove a cache lockfile left by a process that no longer exists.
+
+    msal-extensions records the holder's pid in the lockfile and never cleans up after a process
+    killed mid-startup (harnesses routinely kill short-lived servers). Only a lockfile whose pid is
+    provably dead is removed; anything unreadable, live or foreign is left alone and fails safe.
+    Skipped on Windows, where os.kill(pid, 0) would terminate the process instead of probing it.
+    """
+    if sys.platform == "win32":
+        return
+    try:
+        path = Path(lock_path)
+        content = path.read_text()
+        first = content.split(None, 1)[0] if content.split() else ""
+        pid = int(first) if first.isascii() and first.isdigit() and len(first) <= 10 else 0
+        if pid <= 0 or pid == os.getpid():
+            return
+        try:
+            os.kill(pid, 0)
+            return  # alive
+        except ProcessLookupError:
+            pass
+        except OSError:
+            return  # exists but not ours (PermissionError) or unknowable: leave it
+        if path.read_text() == content:  # unchanged since we looked: not a fresh holder
+            path.unlink(missing_ok=True)
+    except (OSError, ValueError, OverflowError):
+        return
+
+
 def encrypted_cache(settings: Settings):
     """OS-managed encryption only. Test read/write under the same cross-process cache lock."""
     try:
@@ -94,6 +134,7 @@ def encrypted_cache(settings: Settings):
             pass
         location = str(directory / f"{settings.tenant_id}-{settings.client_id}.cache")
         persistence = CheckedPersistence(build_encrypted_persistence(location))
+        _clear_stale_lock(location + ".lockfile")
         with CrossPlatLock(location + ".lockfile"):
             try:
                 content = persistence.load()
@@ -101,8 +142,11 @@ def encrypted_cache(settings: Settings):
                 content = "{}"
             persistence.save(content)
         return PersistedTokenCache(persistence)
-    except Exception:
-        raise LocalError(CACHE_ERROR) from None
+    except Exception as exc:
+        # By name: msal-extensions' lock error is LockError (file lock) or portalocker's
+        # LockException, depending on what is installed.
+        locked = type(exc).__name__ in ("LockError", "LockException")
+        raise LocalError(LOCK_ERROR if locked else CACHE_ERROR) from None
 
 
 @dataclass(frozen=True)

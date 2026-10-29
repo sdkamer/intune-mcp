@@ -848,3 +848,121 @@ def test_status_says_which_groups_are_enabled_and_how_to_add_more(monkeypatch, c
     monkeypatch.setattr(local, "create_session", lambda s: session)
     assert local.main(["status"]) == 0
     assert "Not enabled" not in capsys.readouterr().err
+
+
+def _cache_environment(tmp_path, monkeypatch):
+    """A fake encrypted backend in tmp_path, like the round-trip test above."""
+    import msal_extensions
+    import platformdirs
+    from msal_extensions.persistence import PersistenceNotFound
+
+    class MemoryEncrypted:
+        is_encrypted = True
+        content = None
+
+        def load(self):
+            if self.content is None:
+                raise PersistenceNotFound()
+            return self.content
+
+        def save(self, content):
+            self.content = content
+
+        def get_location(self):
+            return str(tmp_path / f"{TENANT}-{CLIENT_ID}.cache")
+
+        def time_last_modified(self):
+            return 1
+
+    backend = MemoryEncrypted()
+    monkeypatch.setattr(platformdirs, "user_data_path", lambda *a, **k: tmp_path)
+    monkeypatch.setattr(msal_extensions, "build_encrypted_persistence", lambda p: backend)
+    return tmp_path / f"{TENANT}-{CLIENT_ID}.cache.lockfile"
+
+
+def _dead_pid():
+    import subprocess
+
+    proc = subprocess.Popen([sys.executable, "-c", "pass"])
+    proc.wait()
+    return proc.pid
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="pid probing is skipped on Windows")
+def test_a_lockfile_left_by_a_dead_process_is_cleared_at_startup(tmp_path, monkeypatch):
+    """Harnesses kill short-lived servers mid-startup, leaving the lock; that must self-heal."""
+    lock = _cache_environment(tmp_path, monkeypatch)
+    lock.write_text(f"{_dead_pid()} /usr/local/bin/intune-mcp")
+    cache = local.encrypted_cache(settings())
+    assert cache.is_encrypted
+    assert not lock.exists()  # and released normally afterwards
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="pid probing is skipped on Windows")
+@pytest.mark.parametrize(
+    "content",
+    [
+        f"{os.getpid()} intune-mcp",
+        f"{os.getppid()} intune-mcp",  # a live process that is not this one
+        "",
+        "not-a-pid",
+        "-5 x",
+        "0 x",
+        "\u0661\u0662 x",
+        "9" * 40,
+    ],
+)
+@pytest.mark.parametrize("lock_error_name", ["LockError", "LockException"])
+def test_a_live_foreign_or_unreadable_lock_is_never_removed(
+    tmp_path, monkeypatch, content, lock_error_name
+):
+    # msal-extensions raises LockError, or portalocker's LockException when it is installed.
+    lock_error = type(lock_error_name, (Exception,), {})
+    lock = _cache_environment(tmp_path, monkeypatch)
+    lock.write_text(content)
+
+    class Held:
+        def __init__(self, path):
+            pass
+
+        def __enter__(self):
+            raise lock_error("held")
+
+        def __exit__(self, *exc):
+            return False
+
+    import msal_extensions.token_cache as token_cache
+
+    monkeypatch.setattr(token_cache, "CrossPlatLock", Held)
+    with pytest.raises(local.LocalError) as info:
+        local.encrypted_cache(settings())
+    assert lock.exists() and lock.read_text() == content
+    assert str(info.value) == local.LOCK_ERROR
+
+
+def test_a_lock_error_gets_its_own_message_and_other_failures_keep_the_keychain_one(
+    tmp_path, monkeypatch
+):
+    import msal_extensions
+    import platformdirs
+
+    monkeypatch.setattr(platformdirs, "user_data_path", lambda *a, **k: tmp_path)
+
+    def broken(path):
+        raise OSError("keychain denied /Users/x " + UPN)
+
+    monkeypatch.setattr(msal_extensions, "build_encrypted_persistence", broken)
+    with pytest.raises(local.LocalError) as info:
+        local.encrypted_cache(settings())
+    assert str(info.value) == local.CACHE_ERROR and UPN not in str(info.value)
+    assert "lock" in local.LOCK_ERROR.lower() and UPN not in local.LOCK_ERROR
+
+
+def test_windows_never_probes_pids(tmp_path, monkeypatch):
+    lock = tmp_path / "x.lockfile"
+    lock.write_text(f"{_dead_pid()} intune-mcp")
+    monkeypatch.setattr(local.sys, "platform", "win32")
+    killed = []
+    monkeypatch.setattr(local.os, "kill", lambda *a: killed.append(a))
+    local._clear_stale_lock(str(lock))
+    assert killed == [] and lock.exists()

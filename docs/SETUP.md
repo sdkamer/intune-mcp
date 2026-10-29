@@ -141,6 +141,13 @@ The cache location is namespaced by tenant and app under your per-user data dire
 (`intune-mcp`), created `0700`. On macOS and Linux the file is only a change signal; the payload is in
 the OS secret store.
 
+**Stale cache lock.** The cache is guarded by a lockfile that records the owning process id. Harnesses
+often kill short-lived servers, and one killed during startup can leave the lock behind. On macOS and
+Linux the server now removes a lockfile whose process no longer exists, so this heals itself. If a live
+process still holds it you will see "The token cache is locked by another run...": stop every
+`intune-mcp` process (including harness servers) and, if it persists, delete the `.lockfile` beside the
+cache. On Windows stale locks are not detected automatically.
+
 **If startup or `logout` says the local operation is unavailable and `login` does not fix it**, the
 stored payload cannot be read. Close every harness using the server, remove the stored secret yourself
 (macOS: delete the `intune-mcp` item for this tenant/app in Keychain Access; Linux: delete the matching

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- A cache lockfile left behind by a killed process is detected and removed at startup (macOS and Linux),
+  and a lock problem now has its own message instead of the misleading keychain one.
+
 ## 0.1.1
 
 - `intune-mcp status` and the `whoami` tool now list which tool groups are enabled, and `status` says how
