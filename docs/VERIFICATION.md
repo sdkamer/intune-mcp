@@ -36,14 +36,16 @@ groups enabled, then ran the tools through Pi against the real tenant:
 - **Two-scope path:** per-device compliance and configuration states (devices parent check, then the
   configuration scope) succeeded; paging returned a different second page; a malformed device id and an
   oversized page size were rejected before any token request.
+- **Publish check (2026-10-29):** `uvx --from git+https://github.com/sdkamer/intune-mcp@v0.1.0 intune-mcp`
+  installed on a fresh cache and ran; the daily release check read the published release, reported
+  `0.1.0` as latest, and reported no update when already on it.
 - Pi connected to the stdio server and listed all 41 tools. `whoami` returned only tenant, object id and
   version.
 
 ## Not yet verified live
 
 - **The rest of the local sign-in path**: the browser (loopback) login, `logout` and account switching,
-  recovery from a corrupt cache, refresh after the access token has expired for hours, the daily release
-  check against a published release, other harnesses (Claude Code, Codex CLI), Windows and Linux
+  recovery from a corrupt cache, refresh after the access token has expired for hours, other harnesses (Claude Code, Codex CLI), Windows and Linux
   keychains, and restricted (scope-tag) users running it themselves.
 - **Objects that did not exist in the test tenant**: app protection policies, app configuration policies
   and terms and conditions (list calls returned empty), the opt-in detected-apps tools, and policy
