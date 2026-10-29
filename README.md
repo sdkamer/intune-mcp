@@ -33,10 +33,10 @@ Intune.
    ```sh
    export INTUNE_TENANT_ID='<directory-guid>'
    export INTUNE_CLIENT_ID='<app-registration-guid>'
-   uvx --from git+https://github.com/sdkamer/intune-mcp@v0.1.0 intune-mcp login
+   uvx --from git+https://github.com/sdkamer/intune-mcp@v0.1.1 intune-mcp login
    ```
 
-3. Point your harness at `uvx --from git+https://github.com/sdkamer/intune-mcp@v0.1.0 intune-mcp serve`
+3. Point your harness at `uvx --from git+https://github.com/sdkamer/intune-mcp@v0.1.1 intune-mcp serve`
    (examples for Pi, Claude Code and Codex CLI are in the setup guide).
 
 Requires Python 3.13 and [`uv`](https://docs.astral.sh/uv/).

@@ -50,7 +50,7 @@ export INTUNE_TENANT_ID='<directory-guid>'
 export INTUNE_CLIENT_ID='<app-registration-guid>'
 export INTUNE_ENABLED_TOOL_GROUPS='devices'   # e.g. devices,configuration,apps,rbac,enrollment
 
-SRC='git+https://github.com/sdkamer/intune-mcp@v0.1.0'
+SRC='git+https://github.com/sdkamer/intune-mcp@v0.1.1'
 uvx --from "$SRC" intune-mcp login      # opens your browser; then run status
 uvx --from "$SRC" intune-mcp status
 ```
@@ -93,7 +93,7 @@ remote OAuth servers; use `intune-mcp login` instead):
   "mcpServers": {
     "intune": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/sdkamer/intune-mcp@v0.1.0", "intune-mcp", "serve"],
+      "args": ["--from", "git+https://github.com/sdkamer/intune-mcp@v0.1.1", "intune-mcp", "serve"],
       "env": {
         "INTUNE_TENANT_ID": "${INTUNE_TENANT_ID}",
         "INTUNE_CLIENT_ID": "${INTUNE_CLIENT_ID}",
@@ -115,7 +115,7 @@ claude mcp add --transport stdio --scope user intune -- intune-mcp serve
 ```toml
 [mcp_servers.intune]
 command = "uvx"
-args = ["--from", "git+https://github.com/sdkamer/intune-mcp@v0.1.0", "intune-mcp", "serve"]
+args = ["--from", "git+https://github.com/sdkamer/intune-mcp@v0.1.1", "intune-mcp", "serve"]
 env_vars = ["INTUNE_TENANT_ID", "INTUNE_CLIENT_ID", "INTUNE_ENABLED_TOOL_GROUPS"]
 ```
 
@@ -124,7 +124,7 @@ env_vars = ["INTUNE_TENANT_ID", "INTUNE_CLIENT_ID", "INTUNE_ENABLED_TOOL_GROUPS"
 Harnesses do not tell you about new versions. The server checks GitHub's public releases API once a
 day in the background and, when a newer release exists, shows the version in `whoami`,
 `intune-mcp status` and the server instructions (the assistant may mention it). To update, change the
-tag in your configuration (`@v0.1.0` → the new tag) and restart the harness. Disable the check with
+tag in your configuration (`@v0.1.1` → the new tag) and restart the harness. Disable the check with
 `INTUNE_UPDATE_CHECK=0`. The only thing sent is a plain GET with a `User-Agent` naming this version.
 
 ## 7. Encrypted cache and recovery

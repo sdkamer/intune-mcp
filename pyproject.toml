@@ -1,6 +1,6 @@
 [project]
 name = "intune-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Read-only Microsoft Intune MCP server that runs on your own machine, with delegated per-user access"
 readme = "README.md"
 license = "Apache-2.0"
