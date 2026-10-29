@@ -359,6 +359,9 @@ def build_server(
         info: dict[str, Any] = {
             "tenant_id": identity.tenant_id,
             "object_id": identity.object_id,
+            # Names of the enabled groups (not tenant data): lets the assistant explain which
+            # tools exist and that the others are opt-in.
+            "tool_groups": list(settings.enabled_groups),
         }  # stable identifiers only: never a display name or UPN
         if version:
             info["version"] = version

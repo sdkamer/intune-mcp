@@ -98,6 +98,7 @@ async def test_whoami_reports_the_signed_in_account_not_model_input(h):
     assert out == {
         "tenant_id": str(h.settings.tenant_id),
         "object_id": OID_A,
+        "tool_groups": ["devices"],
     }  # stable identifiers only: no display name or UPN
     # A model-supplied identity argument is rejected, never honored.
     spoof = await h.call_tool(token, "whoami", {"object_id": OID_B})

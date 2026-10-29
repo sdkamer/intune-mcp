@@ -116,7 +116,7 @@ async def test_protocol_smoke_single_scope_identity_and_audit(caplog):
         assert {t.name for t in tools} == {"whoami", *TOOL_GROUPS["devices"].tools}
         assert all(t.annotations.read_only_hint for t in tools)
         result = await client.call_tool("whoami", {})
-        assert result.data == {"tenant_id": TENANT, "object_id": OID_A}
+        assert result.data == {"tenant_id": TENANT, "object_id": OID_A, "tool_groups": ["devices"]}
         assert not app.acquire_token_silent.called
         result = await client.call_tool("list_devices", {})
         assert result.data["devices"] == []
@@ -825,3 +825,26 @@ def test_unexpected_login_exceptions_name_only_their_type():
         local.Session(settings(), app).login(device_code=True)
     assert "[KeychainBoom]" in info.value.message and UPN not in info.value.message
     assert "/Users/x" not in info.value.message
+
+
+def test_status_says_which_groups_are_enabled_and_how_to_add_more(monkeypatch, capsys):
+    monkeypatch.setenv("INTUNE_TENANT_ID", TENANT)
+    monkeypatch.setenv("INTUNE_CLIENT_ID", CLIENT_ID)
+    monkeypatch.setattr(local, "configure_logging", lambda: None)
+    for groups, enabled, missing in (
+        ("devices", "devices.", "apps, configuration, enrollment, rbac"),
+        ("devices,rbac", "devices, rbac.", "apps, configuration, enrollment"),
+    ):
+        monkeypatch.setenv("INTUNE_ENABLED_TOOL_GROUPS", groups)
+        session = local.Session(settings(enabled_tool_groups=groups), FakeMsal())
+        monkeypatch.setattr(local, "create_session", lambda s, session=session: session)
+        assert local.main(["status"]) == 0
+        err = capsys.readouterr().err
+        assert f"Enabled tool groups: {enabled}" in err
+        assert f"Not enabled: {missing}." in err and "INTUNE_ENABLED_TOOL_GROUPS" in err
+    every = "devices,configuration,apps,rbac,enrollment"
+    monkeypatch.setenv("INTUNE_ENABLED_TOOL_GROUPS", every)
+    session = local.Session(settings(enabled_tool_groups=every), FakeMsal())
+    monkeypatch.setattr(local, "create_session", lambda s: session)
+    assert local.main(["status"]) == 0
+    assert "Not enabled" not in capsys.readouterr().err

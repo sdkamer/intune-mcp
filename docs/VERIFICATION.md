@@ -42,6 +42,15 @@ groups enabled, then ran the tools through Pi against the real tenant:
 - Pi connected to the stdio server and listed all 41 tools. `whoami` returned only tenant, object id and
   version.
 
+## Restricted-user check on the local server (user-reported, 2026-10-29)
+
+A scope-tag-restricted user installed the published release on their own machine, signed in, connected
+a harness, and the server showed exactly **one** device, where the tenant has about 2,450. So Intune's
+scope tags carry through to the local server for device listing; `count_devices` returned 1 with
+`complete=true`, and the three opt-in tenant-wide tools were absent by default. That install had only the
+default `devices` group enabled, so not yet checked for that user: out-of-scope device and hidden policy
+lookups returning `not_found`, the per-device state tools, and the other groups.
+
 ## Not yet verified live
 
 - **The rest of the local sign-in path**: the browser (loopback) login, `logout` and account switching,

@@ -43,6 +43,11 @@ Requires Python 3.13 and [`uv`](https://docs.astral.sh/uv/).
 
 ## Tools
 
+> **A fresh install enables only the `devices` group (6 tools with `whoami`).** Everything else is
+> opt-in: consent the group's Graph permission, set `INTUNE_ENABLED_TOOL_GROUPS` (for example
+> `devices,configuration,apps,rbac,enrollment`), run `intune-mcp login` again, and restart your
+> harness. `intune-mcp status` and the `whoami` tool both list the groups that are on.
+
 Whoami plus five groups; only `devices` is on by default. Enable more with
 `INTUNE_ENABLED_TOOL_GROUPS` (for example `devices,configuration,apps`). Each group needs its Graph
 permission consented first.

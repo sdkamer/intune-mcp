@@ -69,7 +69,8 @@ tenant/app).
   code at the printed address on any device. If sign-in fails, the message ends with Microsoft's numeric
   `AADSTS` code, which an administrator can look up (common ones: 7000218 public client flows off,
   65001 consent missing, 50076/50158 MFA, 53000/53003 Conditional Access).
-- `intune-mcp status` — checks that exactly one tenant-matching account is cached. It does **not**
+- `intune-mcp status` — checks that exactly one tenant-matching account is cached, and lists which tool
+  groups are enabled and which are not. It does **not**
   prove consent, assignment, Graph access or that the refresh token is still valid.
 - `intune-mcp serve` (the default) — the stdio MCP server the harness runs. Tool calls never open a
   browser: if you are not signed in they return `sign_in_required`; run `login` in a terminal, then

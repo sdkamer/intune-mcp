@@ -18,7 +18,7 @@ from pydantic import ValidationError
 from . import updates
 from .config import GRAPH_SCOPE, Settings
 from .graph import GraphError, ScopeNotAllowedError, classify_token_failure, require_known_scope
-from .groups import authorize_scopes
+from .groups import TOOL_GROUPS, authorize_scopes
 from .identity import Identity
 from .server import build_server
 
@@ -164,6 +164,20 @@ def validate_id_claims(claims: object, settings: Settings) -> dict:
         return claims
     except (ValueError, TypeError, KeyError):
         raise GraphError("sign_in_required", "Sign-in identity rejected. " + SIGN_IN) from None
+
+
+def groups_hint(settings: Settings) -> str:
+    """Which tool groups are on and how to get more. Group names only; nothing from the tenant."""
+    enabled = settings.enabled_groups
+    others = sorted(set(TOOL_GROUPS) - set(enabled))
+    text = f"Enabled tool groups: {', '.join(enabled)}."
+    if others:
+        text += (
+            f" Not enabled: {', '.join(others)}. To add one, consent its Graph permission, set"
+            " INTUNE_ENABLED_TOOL_GROUPS (comma-separated), run login again and restart"
+            " the harness."
+        )
+    return text
 
 
 def require_loopback_browser() -> None:
@@ -396,6 +410,7 @@ def main(argv: list[str] | None = None) -> int:
             session.caller()
             print("One tenant-matching cached account; access/expiry not checked.", file=sys.stderr)
             print(f"intune-mcp {updates.current_version()}", file=sys.stderr)
+            print(groups_hint(settings), file=sys.stderr)
             updates.refresh()
             newer = updates.update_available()
             if newer:
